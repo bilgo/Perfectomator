@@ -29,22 +29,33 @@ import com.perfectomobile.selenium.util.EclipseConnector;
 
 public class PerfectomatorMain implements Runnable  {
 	
-	//TODO
-	//Write all the device IDs here.
-	public static String[] deviceIDs = {"abcdnkjck32i091",
-			"60609o0560950"
-	};
+	/** This class holds all the relevant parameters for running the script
+	 *  It is must to fill all these fields */
+	public static class ScriptParameters{
+		//Write all the device IDs here.
+		public static final String[] deviceIDs = {"0123456",	"6543210"};
+		// the tested app. this app should be installed on the device
+		public static final String appName = "myApp"; 
+		// the device cloud 
+		public static final String host = "???.perfectomobile.com";
+		// your credential to the device cloud
+		public static final String user = "???";
+		public static final String pasword = "???";
+		
+	}
+
+	/********************************** Beginning of the Script *************************************/	
+	private String _deviceID ;
 	
-	private String _deviceID;
-	private static String _appName = "App name"; //TODO
 	
 	public PerfectomatorMain(String deviceId){
 		_deviceID = deviceId;
 	}
 	
+	/** raise a thread pool to run the script across multiple devices */
 	public static void main(String[] args) throws MalformedURLException, IOException {
-        ExecutorService executor = Executors.newFixedThreadPool(deviceIDs.length);
-        for (String deviceId : deviceIDs) {
+        ExecutorService executor = Executors.newFixedThreadPool(ScriptParameters.deviceIDs.length);
+        for (String deviceId : ScriptParameters.deviceIDs) {
         	PerfectomatorMain test = new PerfectomatorMain(deviceId);
                executor.execute(test);
         }      
@@ -55,10 +66,9 @@ public class PerfectomatorMain implements Runnable  {
      public void run() {
 		System.out.println("Run started");
 		String browserName = "";
-		DesiredCapabilities capabilities = new DesiredCapabilities(browserName, "", Platform.ANY);
-		String host = "cloud url";											//TODO		
-		capabilities.setCapability("user", "username");						//TODO
-		capabilities.setCapability("password", "password");					//TODO
+		DesiredCapabilities capabilities = new DesiredCapabilities(browserName, "", Platform.ANY);											
+		capabilities.setCapability("user", ScriptParameters.user);						
+		capabilities.setCapability("password", ScriptParameters.pasword);					
 		capabilities.setCapability("deviceName", _deviceID);
 		
 		// Use the automationName capability to define the required framework - Appium (this is the default) or PerfectoMobile.
@@ -70,11 +80,11 @@ public class PerfectomatorMain implements Runnable  {
 			setExecutionIdCapability(capabilities);
 			
 			
-	        driver = new RemoteWebDriver(new URL("https://" + host + "/nexperience/perfectomobile/wd/hub"), capabilities);
+	        driver = new RemoteWebDriver(new URL("https://" + ScriptParameters.host + "/nexperience/perfectomobile/wd/hub"), capabilities);
 	        
 			for (int i=0; i<5; i++){
 				
-				Utils.startApp(_appName, driver);
+				Utils.startApp(ScriptParameters.appName, driver);
 						
 				Utils.sleep(5000);
 				
@@ -147,8 +157,8 @@ public class PerfectomatorMain implements Runnable  {
 			params.put("property", "frontapp");
 			String frontapp = (String) driver.executeScript(command, params);
 			
-			if (!frontapp.equalsIgnoreCase(_appName)){
-				Utils.startApp(_appName, driver);
+			if (!frontapp.equalsIgnoreCase(ScriptParameters.appName)){
+				Utils.startApp(ScriptParameters.appName, driver);
 				
 				Utils.sleep(1000);
 			}
@@ -197,7 +207,7 @@ public class PerfectomatorMain implements Runnable  {
 			event = new Rotate(driver);
 			break;
 		case HOME:
-			event = new Home(driver,_appName);
+			event = new Home(driver,ScriptParameters.appName);
 			break;
 		case FIND_BUTTON_CLICK:
 			event = new FindButtonClick(driver);
@@ -215,7 +225,7 @@ public class PerfectomatorMain implements Runnable  {
 			event = new Tap(driver);
 			break;
 		case START_APP:
-			event = new StartApp(driver,_appName);
+			event = new StartApp(driver,ScriptParameters.appName);
 			break;
 		}
 		
