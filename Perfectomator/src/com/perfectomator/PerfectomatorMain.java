@@ -40,7 +40,7 @@ public class PerfectomatorMain implements Runnable  {
 		public static final String host = "???.perfectomobile.com";
 		// your credential to the device cloud
 		public static final String user = "???";
-		public static final String pasword = "???";
+		public static final String password = "???";
 		
 	}
 
@@ -68,7 +68,7 @@ public class PerfectomatorMain implements Runnable  {
 		String browserName = "";
 		DesiredCapabilities capabilities = new DesiredCapabilities(browserName, "", Platform.ANY);											
 		capabilities.setCapability("user", ScriptParameters.user);						
-		capabilities.setCapability("password", ScriptParameters.pasword);					
+		capabilities.setCapability("password", ScriptParameters.password);					
 		capabilities.setCapability("deviceName", _deviceID);
 		
 		// Use the automationName capability to define the required framework - Appium (this is the default) or PerfectoMobile.
