@@ -9,11 +9,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.openqa.selenium.Platform;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
-
 import com.perfectomator.event.Back;
 import com.perfectomator.event.Event;
 import com.perfectomator.event.EventType;
@@ -41,11 +39,16 @@ public class PerfectomatorMain implements Runnable  {
 		// your credential to the device cloud
 		public static final String user = "???";
 		public static final String password = "???";
-		
+				
 	}
-
-	/********************************** Beginning of the Script *************************************/	
+	
+	// a thread to run monkeytest in between your own script
+	private static Thread monkeyThread = null; 
 	private String _deviceID ;
+	
+	
+	/********************************** Beginning of the Script *************************************/	
+	
 	
 	
 	public PerfectomatorMain(String deviceId){
@@ -65,6 +68,8 @@ public class PerfectomatorMain implements Runnable  {
 	 @Override
      public void run() {
 		System.out.println("Run started");
+		
+		/** no need to edit these fields, just edit the ScriptParameters class above*/
 		String browserName = "";
 		DesiredCapabilities capabilities = new DesiredCapabilities(browserName, "", Platform.ANY);											
 		capabilities.setCapability("user", ScriptParameters.user);						
@@ -82,20 +87,16 @@ public class PerfectomatorMain implements Runnable  {
 			
 	        driver = new RemoteWebDriver(new URL("https://" + ScriptParameters.host + "/nexperience/perfectomobile/wd/hub"), capabilities);
 	        
-			for (int i=0; i<5; i++){
-				
-				Utils.startApp(ScriptParameters.appName, driver);
-						
-				Utils.sleep(5000);
-				
-				//Monkey testing
-				try{
-					monkeyTesting(driver);
-				}catch(Exception e){
-					e.printStackTrace();
-				}
-				
-			}
+			// start the monkey by a different thread to inject events while 
+	        // current script commands are running.
+	        startMonkeyTesting(driver, 5);
+	        
+	        // write your own script commands here
+	        // the monkey events will be randomly fired in between your script commands
+	        
+	        // --- your script here... ----
+	        
+      
 
 			
 		} catch (Exception e) {
@@ -103,6 +104,7 @@ public class PerfectomatorMain implements Runnable  {
 		} finally {
 			try {
 				
+				waitForMonkeyToFinish();
 				
 				driver.close();
 				
@@ -119,7 +121,51 @@ public class PerfectomatorMain implements Runnable  {
 		System.out.println("Run ended");
 	}
 	
+	 
+	 /**
+	  * Start the monkey testing in a different thread, 
+	  * in order to inject events to current app while other general commands are running.
+	  * @param driver
+	  * @param numberOfTimes - how many time to run monkey testing
+	  */
+	private static void startMonkeyTesting(final RemoteWebDriver driver, final int numberOfTimes){
+		
+		monkeyThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				for (int i=0; i<numberOfTimes; i++){
+					
+					Utils.startApp(ScriptParameters.appName, driver);
+							
+					Utils.sleep(5000);
+					
+					//Monkey testing
+					try{
+						monkeyTesting(driver);
+					}catch(Exception e){
+						e.printStackTrace();
+					}					
+				}	
+			}
+		});
+		monkeyThread.start();
+		
+	}
 	
+	/**
+	 * wait for monkey test to finish its execution.
+	 * this is required since your own script may finish before monkey test finishes
+	 */
+	private static void waitForMonkeyToFinish(){
+		while (monkeyThread != null && monkeyThread.isAlive());
+	}
+	
+	/**
+	 * The monkey testing
+	 * Here you can set the rate for each eb=vent, add events and more
+	 * @param driver
+	 */
 	private static void monkeyTesting(RemoteWebDriver driver) {
 		
 		//Give chances for each event
@@ -143,7 +189,12 @@ public class PerfectomatorMain implements Runnable  {
 			goCrazy(events,driver);
 		}
 	}
-
+	
+	/**
+	 * Randomize and execute the monkey events
+	 * @param events
+	 * @param driver
+	 */
 	private static void goCrazy(ArrayList<Event> events, RemoteWebDriver driver) {
 		Iterator<Event> it = events.iterator();
 		
@@ -165,7 +216,13 @@ public class PerfectomatorMain implements Runnable  {
 		}
 	}
 
-
+	/**
+	 * Randomize a monkey event
+	 * @param eventsNum
+	 * @param eventChances
+	 * @param driver
+	 * @return
+	 */
 	public static ArrayList<Event> randomEvents(int eventsNum, Map<EventType,Integer> eventChances, RemoteWebDriver driver) {
 		ArrayList<EventType> arr = initChances(eventChances);
 		ArrayList<Event> events = new ArrayList<Event>();
@@ -191,6 +248,12 @@ public class PerfectomatorMain implements Runnable  {
 		return arr;
 	}
 	
+	/**
+	 * initialized events handler for the randomizer
+	 * @param arr
+	 * @param driver
+	 * @return
+	 */
 	private static Event randomEvent(ArrayList<EventType> arr, RemoteWebDriver driver) {
 		
 		int length = arr.size();
